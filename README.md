@@ -150,19 +150,19 @@ This project was architected through collaborative sessions with GPT and Claude,
 
 ```mermaid
 flowchart TD
-    A[Initial Problem: Extract Clinic Metadata] --> B[AI Collaboration Session 1<br/>GPT + Claude Architecture]
-    B --> C[Define Requirements<br/>- Specialty, Modalities<br/>- Location, Clinic Size<br/>- Polite Web Scraping]
-    C --> D[Design Multi-Stage Pipeline<br/>- URL Discovery<br/>- Content Extraction<br/>- LLM Intelligence]
-    D --> E[AI Collaboration Session 2<br/>Technical Implementation]
-    E --> F[Implement Core Components<br/>- Web Crawler<br/>- Content Parser<br/>- Evidence Builder]
-    F --> G[AI Collaboration Session 3<br/>LLM Integration]
-    G --> H[Add Multi-Provider Support<br/>- Gemini (default)<br/>- OpenAI<br/>- Anthropic]
-    H --> I[AI Collaboration Session 4<br/>Error Handling & Optimization]
-    I --> J[Implement Advanced Features<br/>- Iterative Expansion<br/>- Exhaustive Fallback<br/>- Multi-format Output]
-    J --> K[Testing & Refinement<br/>- Real Clinic Websites<br/>- Edge Case Handling<br/>- Performance Tuning]
-    K --> L[Documentation & Deployment<br/>- README & Examples<br/>- GitHub Repository<br/>- Usage Instructions]
-    L --> M[Final AI Review<br/>Code Quality & Documentation]
-    M --> N[Production Ready<br/>JotPsych Scraper]
+    A["Initial Problem: Extract Clinic Metadata"] --> B["AI Collaboration Session 1<br/>GPT + Claude Architecture"]
+    B --> C["Define Requirements<br/>- Specialty, Modalities<br/>- Location, Clinic Size<br/>- Polite Web Scraping"]
+    C --> D["Design Multi-Stage Pipeline<br/>- URL Discovery<br/>- Content Extraction<br/>- LLM Intelligence"]
+    D --> E["AI Collaboration Session 2<br/>Technical Implementation"]
+    E --> F["Implement Core Components<br/>- Web Crawler<br/>- Content Parser<br/>- Evidence Builder"]
+    F --> G["AI Collaboration Session 3<br/>LLM Integration"]
+    G --> H["Add Multi-Provider Support<br/>- Gemini (default)<br/>- OpenAI<br/>- Anthropic"]
+    H --> I["AI Collaboration Session 4<br/>Error Handling & Optimization"]
+    I --> J["Implement Advanced Features<br/>- Iterative Expansion<br/>- Exhaustive Fallback<br/>- Multi-format Output"]
+    J --> K["Testing & Refinement<br/>- Real Clinic Websites<br/>- Edge Case Handling<br/>- Performance Tuning"]
+    K --> L["Documentation & Deployment<br/>- README & Examples<br/>- GitHub Repository<br/>- Usage Instructions"]
+    L --> M["Final AI Review<br/>Code Quality & Documentation"]
+    M --> N["Production Ready<br/>JotPsych Scraper"]
     
     style A fill:#e1f5fe
     style B fill:#f3e5f5
