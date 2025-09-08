@@ -2,6 +2,36 @@
 
 Extract key clinic metadata from a website (single URL or CSV batch) using a polite crawler and an LLM with a strict JSON schema.
 
+## Table of Contents
+
+- [1. How This Works](#1-how-this-works)
+  - [What It Does](#what-it-does)
+  - [Output Schema](#output-schema)
+  - [Requirements & Setup](#requirements--setup)
+  - [Quick Start](#quick-start)
+  - [Output Formats](#output-formats)
+  - [Key Flags](#key-flags)
+  - [Troubleshooting](#troubleshooting)
+- [2. Development Process](#2-development-process)
+  - [Development Process Flow Chart](#development-process-flow-chart)
+  - [Development Phases](#development-phases)
+  - [How the Code Works](#how-the-code-works)
+- [3. AI Prompt Engineering](#3-ai-prompt-engineering)
+  - [System Prompt](#system-prompt)
+  - [Prompt Design Principles](#prompt-design-principles)
+- [4. Next Steps & Caveats](#4-next-steps--caveats)
+  - [A) Engineering & Infrastructure](#a-engineering--infrastructure)
+  - [B) Quality & Modeling](#b-quality--modeling)
+  - [C) Data Source Enrichment](#c-data-source-enrichment)
+  - [D) Security, Privacy, and Compliance](#d-security-privacy-and-compliance)
+  - [Key Caveats & Edge Cases](#key-caveats--edge-cases-with-mitigations)
+- [5. Top Three Uses After ~600 Clinics](#5-top-three-uses-after-600-clinics)
+  - [1) Precision GTM](#1-precision-gtm-segmentation-routing-and-personalization)
+  - [2) Product Roadmap & Account Expansion](#2-product-roadmap--account-expansion-data-driven)
+  - [3) Market Intelligence & Partnerships](#3-market-intelligence--partnerships)
+  - [Extra Ideas](#extra-ideas)
+  - [TL;DR](#tldr)
+
 ## 1. How This Works
 
 ### What It Does
