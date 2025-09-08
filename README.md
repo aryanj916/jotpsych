@@ -163,7 +163,7 @@ The system was refined through extensive testing with real clinic websites, addi
 The system follows a sophisticated multi-stage pipeline with two key flow diagrams:
 
 1. **Development Process Flow** (above): Shows the collaborative AI-assisted development journey
-2. **Technical Implementation Flow** (`diagram.md`): Shows the runtime execution pipeline
+2. **Technical Implementation Flow**: Shows the runtime execution pipeline
 
 The runtime system follows this technical pipeline:
 
