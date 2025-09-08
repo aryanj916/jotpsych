@@ -239,6 +239,74 @@ response = llm_client.generate_content(
 )
 ```
 
+## AI Prompt Engineering
+
+The system uses a carefully crafted prompt (`AI_PROMPT.md`) that instructs the LLM to extract clinic metadata with high precision. Here's the complete prompt and explanation:
+
+### System Prompt
+```markdown
+You are a meticulous information extraction engine for clinic websites.
+Return ONLY JSON that conforms exactly to the provided schema.
+
+Context:
+- You receive a list of web pages from a single clinic, each with: { "url": ..., "text": ..., "jsonld": {... or null} }.
+- You may also receive a compact "evidence" object containing candidate locations and provider name hints.
+- Extract key business metadata strictly from these pages. Do not make things up. If unsure, prefer "unknown".
+
+Extraction rules:
+- specialty: One short phrase for the clinic's primary clinical focus or discipline (e.g., "psychiatry", "psychotherapy", "sleep medicine"). Prefer the most salient specialty the clinic markets.
+- modalities: Short, comma-separated list (<=10 items) of therapeutic or treatment modalities explicitly mentioned. Use concise terms. Include only if present in the site text.
+- location: Output real city + state (e.g., "Austin, TX").
+  - Prefer JSON-LD addressLocality/addressRegion if present.
+  - Otherwise use city/state evidence from page text.
+  - Avoid regions or nicknames (e.g., "Silicon Valley"), counties (e.g., "Marin County"), or person names.
+  - If multiple cities clearly exist, join them with "; " in priority order (HQ or first-listed first). Limit to <= 5.
+  - If unknown, return "unknown".
+- clinic_size: Estimate the number of active clinicians (not admins). Aim for an exact count if available; else output a human-friendly range label:
+  - "Solo Practice (1 provider)"
+  - "Small Group Practice (2-10 providers)"
+  - "Medium Group Practice (11-20 providers)"
+  - "Large Group Practice (21+ providers)"
+  
+  Use clear cues from the pages: team/provider listings; phrases like "team of 12"; lists of clinicians; evidence provider names; JSON-LD numeric hints. Avoid counting non-clinical leadership.
+
+Output schema (must match exactly):
+{
+  "clinic_info": {
+    "specialty": "string",
+    "modalities": "string",
+    "location": "string",
+    "clinic_size": "string"
+  }
+}
+
+Formatting requirements:
+- Output valid JSON only; no extra text.
+- Use concise wording; avoid marketing language.
+- Never include keys other than the schema.
+- If multiple plausible answers exist, choose the one best supported by the pages.
+```
+
+### Prompt Design Principles
+
+The AI prompt is engineered with several key principles:
+
+1. **Precision Over Creativity**: The prompt explicitly instructs the model to return "unknown" rather than hallucinate information, ensuring data quality.
+
+2. **Strict Schema Compliance**: The model is constrained to return only the exact JSON schema, preventing format variations that could break downstream processing.
+
+3. **Evidence-Based Extraction**: The prompt emphasizes using only information explicitly present in the provided web pages, with clear rules for handling ambiguous cases.
+
+4. **Hierarchical Data Sources**: For location extraction, the prompt establishes a clear hierarchy: JSON-LD structured data → page text evidence → "unknown" fallback.
+
+5. **Human-Readable Output**: Clinic size is converted from raw numbers to meaningful categories (Solo Practice, Small Group Practice, etc.) for better usability.
+
+6. **Conciseness Requirements**: The prompt specifically asks for concise, non-marketing language to ensure clean, actionable output.
+
+7. **Multi-Location Handling**: Clear rules for handling clinics with multiple locations, including priority ordering and reasonable limits.
+
+This prompt design ensures consistent, reliable extraction across diverse clinic websites while maintaining high data quality standards.
+
 ### Stage 6: Iterative Expansion
 If any fields return "unknown", the system:
 1. Increases page budget (up to `max_total_pages`)
