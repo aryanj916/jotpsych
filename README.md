@@ -99,28 +99,6 @@ Example pretty block (JSONL):
 
 ---
 
-## How it works
-1) Discovery (same‑domain BFS):
-   - Starts at the homepage; ranks links with strong priors (About, Team/Providers/Physicians, Services/Specialties, Locations/Contact, Directions/Map/Address)
-   - Skips non‑HTML assets and off‑domain links
-2) Page processing:
-   - Visible text extraction (drops scripts/styles/nav/footers/cookie banners) and JSON‑LD parsing
-   - Each page becomes `{url, text, jsonld}`
-3) Evidence builder:
-   - Candidate locations from JSON‑LD and City, ST patterns in text
-   - Provider name/credential patterns and numeric hints (e.g., “team of 12 clinicians”)
-   - Specialty/modality tokens from text/JSON‑LD
-4) LLM extraction:
-   - Gemini 2.5 Pro with a strict schema, temperature=0, system prompt from `AI_PROMPT.md`
-5) Unknowns → expand:
-   - Increases pages (then depth) within caps; optionally runs an exhaustive same‑domain crawl
-6) Output:
-   - JSONL/JSON/CSV written to `--out`; last result printed to stdout for 1‑URL runs
-
-A flow diagram is available in `diagram.md`.
-
----
-
 ## Troubleshooting
 - “Missing GEMINI_API_KEY …”: export the key or add to `.env`
 - Output is one line per record: add `--pretty` or use `.json` output, or omit `--compact`
@@ -179,16 +157,10 @@ flowchart TD
 - **Schema Design**: Defined a clean, minimal output schema focusing on the most valuable clinic attributes
 
 ### 2. Technical Implementation Strategy
-- **Polite Crawling**: Implemented respectful web scraping with robots.txt compliance, rate limiting, and proper user agents
-- **Content Discovery**: Developed intelligent link ranking system to prioritize relevant pages (About, Team, Services, Locations)
-- **Evidence Building**: Created lightweight preprocessing to extract candidate locations, provider hints, and specialty tokens
-- **LLM Integration**: Integrated multiple providers (Gemini, OpenAI, Anthropic) with strict JSON schema enforcement
+The implementation focused on building a robust, respectful web scraping system with intelligent content discovery and LLM-based extraction capabilities.
 
 ### 3. Iterative Refinement
-- **Unknown Handling**: Implemented iterative expansion when initial crawl yields insufficient data
-- **Exhaustive Fallback**: Added option for comprehensive same-domain crawling when unknowns persist
-- **Output Flexibility**: Built support for multiple output formats (JSONL, JSON, CSV) with pretty formatting
-- **Error Resilience**: Added robust error handling for network issues, parsing failures, and API limits
+The system was refined through extensive testing with real clinic websites, adding advanced features like iterative expansion and comprehensive error handling.
 
 ## How the Code Works
 
@@ -318,30 +290,6 @@ Results are written in multiple formats:
 - **JSONL**: One JSON object per clinic (default)
 - **JSON**: Single object or array of objects
 - **CSV**: Flattened fields for spreadsheet analysis
-
-## Key Technical Features
-
-### Multi-Provider LLM Support
-```python
-# Supports Gemini (default), OpenAI, and Anthropic
-providers = {
-    "gemini": GeminiProvider,
-    "openai": OpenAIProvider, 
-    "anthropic": AnthropicProvider
-}
-```
-
-### Robust Error Handling
-- Network timeouts and retries
-- Graceful degradation when pages fail to load
-- Validation of LLM responses with Pydantic schemas
-- Comprehensive logging of crawl progress
-
-### Performance Optimizations
-- Concurrent page fetching with configurable limits
-- Intelligent caching of robots.txt and page content
-- Memory-efficient processing of large websites
-- Configurable rate limiting to respect server resources
 
 ## Notes
 - The default path uses Gemini. OpenAI/Anthropic adapters are present in code and can be enabled via `--provider` if their SDKs and keys are configured.
