@@ -142,6 +142,105 @@ A flow diagram is available in `diagram.md`.
 
 ---
 
+## Development Process
+
+This project was architected through collaborative sessions with GPT and Claude, iteratively refining the approach to clinic website intelligence extraction. The development process involved several key phases:
+
+### 1. Initial Architecture & Design
+- **Problem Definition**: Need to extract structured clinic metadata (specialty, modalities, location, size) from diverse clinic websites
+- **AI Collaboration**: Worked with GPT and Claude to design a multi-stage pipeline combining web crawling, content extraction, and LLM-based intelligence
+- **Schema Design**: Defined a clean, minimal output schema focusing on the most valuable clinic attributes
+
+### 2. Technical Implementation Strategy
+- **Polite Crawling**: Implemented respectful web scraping with robots.txt compliance, rate limiting, and proper user agents
+- **Content Discovery**: Developed intelligent link ranking system to prioritize relevant pages (About, Team, Services, Locations)
+- **Evidence Building**: Created lightweight preprocessing to extract candidate locations, provider hints, and specialty tokens
+- **LLM Integration**: Integrated multiple providers (Gemini, OpenAI, Anthropic) with strict JSON schema enforcement
+
+### 3. Iterative Refinement
+- **Unknown Handling**: Implemented iterative expansion when initial crawl yields insufficient data
+- **Exhaustive Fallback**: Added option for comprehensive same-domain crawling when unknowns persist
+- **Output Flexibility**: Built support for multiple output formats (JSONL, JSON, CSV) with pretty formatting
+- **Error Resilience**: Added robust error handling for network issues, parsing failures, and API limits
+
+## How the Code Works
+
+The system follows a sophisticated multi-stage pipeline as illustrated in the flow diagram (`diagram.md`):
+
+### Stage 1: URL Normalization & Discovery
+```python
+# Normalize input URLs and check robots.txt compliance
+urls = normalize_urls(input_urls)
+robots_allowed = check_robots_txt(urls)
+```
+
+### Stage 2: Intelligent Page Discovery
+The crawler uses a priority-based ranking system to discover relevant pages:
+- **High Priority**: About, Team/Providers, Services/Specialties, Locations/Contact
+- **Medium Priority**: Treatments, Conditions, Office information
+- **Filtering**: Excludes non-HTML assets, off-domain links, and irrelevant content
+
+### Stage 3: Content Extraction & Cleaning
+```python
+# Extract visible text, removing boilerplate
+visible_text = extract_visible_text(html)
+json_ld = parse_json_ld(html)
+page_data = {"url": url, "text": visible_text, "jsonld": json_ld}
+```
+
+### Stage 4: Evidence Building
+The system preprocesses content to build lightweight evidence:
+- **Location Detection**: Extracts city/state patterns and JSON-LD address data
+- **Provider Hints**: Identifies provider names, credentials, and count indicators
+- **Specialty Tokens**: Collects clinical specialty and modality keywords
+
+### Stage 5: LLM Intelligence Extraction
+```python
+# Send structured data to LLM with strict schema
+response = llm_client.generate_content(
+    system_prompt=AI_PROMPT,
+    user_content=structured_evidence,
+    response_schema=ClinicInfoSchema,
+    temperature=0  # Deterministic output
+)
+```
+
+### Stage 6: Iterative Expansion
+If any fields return "unknown", the system:
+1. Increases page budget (up to `max_total_pages`)
+2. Increases crawl depth (up to `max_total_depth`) 
+3. Optionally runs exhaustive same-domain crawl
+
+### Stage 7: Output Generation
+Results are written in multiple formats:
+- **JSONL**: One JSON object per clinic (default)
+- **JSON**: Single object or array of objects
+- **CSV**: Flattened fields for spreadsheet analysis
+
+## Key Technical Features
+
+### Multi-Provider LLM Support
+```python
+# Supports Gemini (default), OpenAI, and Anthropic
+providers = {
+    "gemini": GeminiProvider,
+    "openai": OpenAIProvider, 
+    "anthropic": AnthropicProvider
+}
+```
+
+### Robust Error Handling
+- Network timeouts and retries
+- Graceful degradation when pages fail to load
+- Validation of LLM responses with Pydantic schemas
+- Comprehensive logging of crawl progress
+
+### Performance Optimizations
+- Concurrent page fetching with configurable limits
+- Intelligent caching of robots.txt and page content
+- Memory-efficient processing of large websites
+- Configurable rate limiting to respect server resources
+
 ## Notes
 - The default path uses Gemini. OpenAI/Anthropic adapters are present in code and can be enabled via `--provider` if their SDKs and keys are configured.
-- The model is instructed to return “unknown” when evidence is insufficient. Iterative expansion and exhaustive mode help reduce unknowns.
+- The model is instructed to return "unknown" when evidence is insufficient. Iterative expansion and exhaustive mode help reduce unknowns.
