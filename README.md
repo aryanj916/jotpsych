@@ -294,3 +294,143 @@ Results are written in multiple formats:
 ## Notes
 - The default path uses Gemini. OpenAI/Anthropic adapters are present in code and can be enabled via `--provider` if their SDKs and keys are configured.
 - The model is instructed to return "unknown" when evidence is insufficient. Iterative expansion and exhaustive mode help reduce unknowns.
+
+## Next Steps & Caveats
+
+Below is exactly what I'd do with more time, grouped by engineering, quality, data sources, and operations. I'm also explicit about edge cases and how we'd mitigate them.
+
+### A) Engineering & Infrastructure
+
+#### Smarter, Safer Crawling
+- Respect robots.txt and per-domain rate limits; add crawl-delay, max-RPS, and exponential backoff
+- URL hygiene: block query-storms (e.g., calendars ?date=...), UTM params, infinite pagination; enforce same-domain, no assets, canonicalize URLs
+- Retry policy: network timeouts get a bounded exponential backoff (e.g., 3 attempts with jitter)
+- Circuit breakers: if 5+ consecutive failures or we hit a block page, skip the domain and log
+
+#### Parallelism & Prioritization
+- Parallelize fetches with an async worker pool + domain-level concurrency caps (e.g., 2–4 per domain)
+- Prioritize "high-signal" pages first (About/Team/Services/Locations), then cascade to lower-priority pages if fields remain unknown
+- Add a budget manager: a token budget for LLM and a page/depth budget per site so we finish quickly under heavy link graphs
+
+#### JS Rendering Fallback (Selective)
+- For SPA/JS-heavy sites only, swap to Playwright (headless Chromium) when plain HTML is empty/boilerplate
+- Guardrails: strict timeouts, screenshot + HTML dump for debugging, and only enable when necessary to control costs
+
+#### Content Normalization Layer
+- Location: canonicalize to "City, ST"; for multi-location groups produce both HQ and a locations[] array (with dedup)
+- Modalities: map synonyms to a controlled vocabulary (e.g., "med management" → "medication management")
+- Clinic size: store exact provider count (if detected) and a bucket; separate fields clinic_size_exact and clinic_size_bucket
+
+#### Evidence & Auditability
+- Persist evidence for each field: field -> {source_url, text_span}
+- CLI flag --with_evidence to output a parallel JSON for trust & human review
+- Helps reviewers verify why the model chose a value and eliminates "black-box" anxiety
+
+#### Caching & Persistence
+- HTTP cache (ETag/Last-Modified aware) to avoid re-fetching unchanged pages
+- Result cache keyed by domain + content hash; short-circuit re-extractions during re-runs
+
+#### Observability & SLOs
+- Structured logs (JSON), metrics (success rate, extraction completeness per field, 95p latency), and alerts
+- Dashboard on per-field unknown rates to find weak spots (e.g., location unknown > 15% triggers investigation)
+
+#### CI/CD + Tests
+- Golden set of ~50 clinics with hand-labeled JSON; unit tests for DOM cleaner, link ranker, location parser, name detection
+- Regression tests run in CI with small, fixed HTML snapshots (no live web hits)
+
+### B) Quality & Modeling
+
+#### Strict Schema + Guardrails
+- Keep temperature=0, schema enforcement (Gemini structured JSON), and "use unknown if not confident"
+
+#### Post-Validation & Heuristics
+- If clinic_size is large but modalities are blank, re-query with more pages (likely a hospital system with content siloed)
+- If location looks like a street without a city, re-probe JSON-LD and /contact page
+
+#### Active Learning
+- Human-in-the-loop queue for low-confidence outputs (e.g., when the model cites a weak evidence span)
+- Curate corrections and retrain the normalization layer + prompt examples
+
+#### Drift & Monitoring
+- Track per-field quality metrics over time; if model updates change behavior, detect a jump in unknowns or mismatches and roll back
+
+### C) Data Source Enrichment
+
+#### LinkedIn Enrichment
+- When locations or people don't show up on the site, look up the clinic's LinkedIn Company Page to infer city/state and approximate team size
+- Cross-validate: if LinkedIn says "11–50 employees," reconcile with providers we counted. Store as external_signals.linkedin_size_range
+
+#### Google Business Profile / Apple Maps
+- Pull primary address, hours, phone; cross-check city/state with site extraction
+
+#### NPI Registry & State Licensure Boards
+- For medical and behavioral practices, NPI/board sites can confirm provider counts and specialties (e.g., PMHNP vs. MD/DO)
+- Use name+city fuzzy match; caution: avoid PII over-collection and follow ToS
+
+#### Schema.org JSON-LD Variants
+- Many sites have LocalBusiness, MedicalClinic, or Organization with useful address fields—collect and prefer these
+
+#### OCR & PDF Parsing
+- Some clinics hide staff lists in PDFs. Add PDF text extraction (and OCR for scanned PDFs)
+- Rate-limit to avoid cost/perf surprises; only activate when team/services pages are missing
+
+#### Language & i18n
+- Detect non-English pages; allow language hint to the model; maintain multilingual modality dictionary
+
+### D) Security, Privacy, and Compliance
+
+- Store only public business info; avoid scraping any patient-facing portals or PII
+- Separate environments and encrypt API keys; never commit secrets
+- Clear retention policy; allow "do not crawl" lists (honor takedown requests)
+
+### Key Caveats & Edge Cases (with Mitigations)
+
+- **SPA/JS-rendered content**: plain HTML may be empty → Playwright fallback only when needed
+- **Infinite calendars/search pages**: parameter traps → URL rules to block repeating patterns
+- **Multi-brand or franchise networks**: many subdomains/brands → restrict to same domain per run; later add cross-domain handling with a map file
+- **Multi-location groups**: HQ vs. satellite sites → return location_hq + locations[] (normalized) to avoid over-writing
+- **Telehealth-only**: no physical address → output "telehealth" and leave locations[] empty
+- **PDF-only staff lists**: requires PDF/OCR to get provider counts → add conditional PDF parsing
+- **Titles vs. clinicians**: "leadership" lists may include non-clinical admins → use credential patterns (MD, DO, PMHNP, PsyD, LCSW, etc.) to count only clinicians
+- **Name collisions**: common names across pages → dedup by (name, credential, page_url) and cap to plausible bounds
+- **International addresses**: state codes won't match US regex → fall back to city + country or leave unknown and emit an evidence citation
+
+## Top Three Uses After ~600 Clinics
+Here are the three most valuable, concrete ways JotPsych can operationalize this dataset quickly.
+
+### 1) Precision GTM: Segmentation, Routing, and Personalization
+
+- **Segment clinics** by specialty and modalities (e.g., "TMS clinics," "therapy-only," "med management heavy")
+- **Route accounts** by region or fit scores (e.g., "large group practice in CA with TMS + CBT")
+- **Personalize outreach & demos**:
+  - Email openers that mirror the clinic's language ("We support medication management + CBT workflows…")
+  - Landing pages or demo configs pre-loaded with that clinic's typical modalities
+- **Sales ops automation**: push structured fields into CRM (HubSpot/Salesforce), auto-create tasks, and trigger sequences
+- **Bonus**: Use parallelized crawling to keep this dataset fresh weekly, so sales never works stale leads
+
+### 2) Product Roadmap & Account Expansion (Data-Driven)
+
+- **Heatmaps of modality prevalence** by state/city → decide which integrations and features to build first (e.g., TMS scheduling, ketamine protocols, CBT note templates)
+- **Capacity targeting** via clinic_size: small groups vs. enterprise; tailor onboarding, pricing, and support tiers
+- **Roll-up insights for expansion**: find multi-location networks that match your ICP and prioritize C-level outreach with a network-level pitch
+- **Layer in LinkedIn enrichment** to validate size and org structure for the right buyer personas (founders vs. practice managers vs. clinical directors)
+
+### 3) Market Intelligence & Partnerships
+
+- **Coverage analysis**: map where behavioral health capacity exists or is thin; identify partner regions for referrals, payers, or employer programs
+- **Partnership identification**: quickly locate niche providers (e.g., pediatric neuropsych, IOP/PHP) for co-marketing, data pilots, and referral networks
+- **Benchmarking dashboards**: track your customer base vs. the wider market—modality mix, average clinic size, geographic spread
+
+### Extra Ideas
+
+- **Lead scoring** that considers modality match + territory priorities
+- **Waitlist estimation proxy**: size vs. modality mix can flag likely bottlenecks (e.g., few psychiatrists doing med management in high-demand metros)
+- **Compliance assistance**: automatically flag sites that lack required disclosures or contact info—value-add outreach angle
+
+### TL;DR
+
+With more time, I'd harden crawling (robots, rate limits), add parallelization + prioritization, introduce headless fallback, build evidence logging, normalize outputs, and enrich with LinkedIn/GBP/NPI—all wrapped with CI tests and dashboards.
+
+Caveats are well understood (SPAs, PDFs, multi-location, admin vs. provider counts) and each has a concrete mitigation plan.
+
+At 600+ clinics, this dataset pays for itself via targeted GTM, roadmap clarity, and partnership intelligence—with fresh, structured data feeding your CRM and analytics every week.
