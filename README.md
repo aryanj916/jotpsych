@@ -146,6 +146,33 @@ A flow diagram is available in `diagram.md`.
 
 This project was architected through collaborative sessions with GPT and Claude, iteratively refining the approach to clinic website intelligence extraction. The development process involved several key phases:
 
+### Development Process Flow Chart
+
+```mermaid
+flowchart TD
+    A[Initial Problem: Extract Clinic Metadata] --> B[AI Collaboration Session 1<br/>GPT + Claude Architecture]
+    B --> C[Define Requirements<br/>- Specialty, Modalities<br/>- Location, Clinic Size<br/>- Polite Web Scraping]
+    C --> D[Design Multi-Stage Pipeline<br/>- URL Discovery<br/>- Content Extraction<br/>- LLM Intelligence]
+    D --> E[AI Collaboration Session 2<br/>Technical Implementation]
+    E --> F[Implement Core Components<br/>- Web Crawler<br/>- Content Parser<br/>- Evidence Builder]
+    F --> G[AI Collaboration Session 3<br/>LLM Integration]
+    G --> H[Add Multi-Provider Support<br/>- Gemini (default)<br/>- OpenAI<br/>- Anthropic]
+    H --> I[AI Collaboration Session 4<br/>Error Handling & Optimization]
+    I --> J[Implement Advanced Features<br/>- Iterative Expansion<br/>- Exhaustive Fallback<br/>- Multi-format Output]
+    J --> K[Testing & Refinement<br/>- Real Clinic Websites<br/>- Edge Case Handling<br/>- Performance Tuning]
+    K --> L[Documentation & Deployment<br/>- README & Examples<br/>- GitHub Repository<br/>- Usage Instructions]
+    L --> M[Final AI Review<br/>Code Quality & Documentation]
+    M --> N[Production Ready<br/>JotPsych Scraper]
+    
+    style A fill:#e1f5fe
+    style B fill:#f3e5f5
+    style E fill:#f3e5f5
+    style G fill:#f3e5f5
+    style I fill:#f3e5f5
+    style M fill:#f3e5f5
+    style N fill:#e8f5e8
+```
+
 ### 1. Initial Architecture & Design
 - **Problem Definition**: Need to extract structured clinic metadata (specialty, modalities, location, size) from diverse clinic websites
 - **AI Collaboration**: Worked with GPT and Claude to design a multi-stage pipeline combining web crawling, content extraction, and LLM-based intelligence
@@ -165,7 +192,14 @@ This project was architected through collaborative sessions with GPT and Claude,
 
 ## How the Code Works
 
-The system follows a sophisticated multi-stage pipeline as illustrated in the flow diagram (`diagram.md`):
+The system follows a sophisticated multi-stage pipeline. There are two key flow diagrams:
+
+1. **Development Process Flow** (above): Shows the collaborative AI-assisted development journey
+2. **Technical Implementation Flow** (`diagram.md`): Shows the runtime execution pipeline
+
+### Technical Implementation Flow
+
+The runtime system follows this technical pipeline as illustrated in `diagram.md`:
 
 ### Stage 1: URL Normalization & Discovery
 ```python
