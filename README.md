@@ -207,7 +207,7 @@ response = llm_client.generate_content(
 
 ## 3. AI Prompt Engineering
 
-The system uses a carefully crafted prompt (`AI_PROMPT.md`) that instructs the LLM to extract clinic metadata with high precision. Here's the complete prompt and explanation:
+The system uses a carefully crafted prompt that instructs the LLM to extract clinic metadata with high precision. Here's the complete prompt and explanation:
 
 ### System Prompt
 ```markdown
