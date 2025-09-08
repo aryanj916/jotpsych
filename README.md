@@ -1,8 +1,18 @@
-## JotPsych — Clinic Intelligence Scraper
+# JotPsych — Clinic Intelligence Scraper
 
 Extract key clinic metadata from a website (single URL or CSV batch) using a polite crawler and an LLM with a strict JSON schema.
 
-Output schema:
+## 1. How This Works
+
+### What It Does
+- Crawls same-domain pages (About, Team/Providers/Physicians, Services/Specialties, Locations/Contact, etc.)
+- Cleans visible text and reads JSON‑LD if present
+- Builds lightweight "evidence" (candidate locations, provider name/count hints, specialty/modality tokens)
+- Calls an LLM (Gemini 2.5 Pro by default) with a strict response schema and temperature=0
+- Iteratively expands the crawl if any field is still unknown; optional final exhaustive crawl fallback
+- Writes JSONL/JSON/CSV with pretty defaults for readability
+
+### Output Schema
 ```json
 {
   "clinic_info": {
@@ -14,22 +24,12 @@ Output schema:
 }
 ```
 
-### What it does
-- Crawls same-domain pages (About, Team/Providers/Physicians, Services/Specialties, Locations/Contact, etc.)
-- Cleans visible text and reads JSON‑LD if present
-- Builds lightweight “evidence” (candidate locations, provider name/count hints, specialty/modality tokens)
-- Calls an LLM (Gemini 2.5 Pro by default) with a strict response schema and temperature=0
-- Iteratively expands the crawl if any field is still unknown; optional final exhaustive crawl fallback
-- Writes JSONL/JSON/CSV with pretty defaults for readability
-
----
-
-## Requirements
+### Requirements & Setup
 - Python 3.10+
 - Gemini API key exported as `GEMINI_API_KEY` (or `GOOGLE_API_KEY`)
 - Recommended: a `.env` file (auto‑loaded if `python-dotenv` is installed)
 
-Install deps:
+Install dependencies:
 ```bash
 pip install -r requirements.txt
 ```
@@ -39,17 +39,14 @@ pip install -r requirements.txt
 GEMINI_API_KEY=your_key_here
 ```
 
----
+### Quick Start
 
-## Quick start
-
-### Interactive (recommended)
-Run without arguments and follow the prompts:
+**Interactive (recommended):**
 ```bash
 python jotpsych_scraper.py
 ```
 
-### One URL
+**One URL:**
 ```bash
 python jotpsych_scraper.py \
   --url https://exampleclinic.com \
@@ -57,7 +54,7 @@ python jotpsych_scraper.py \
   --out results.jsonl
 ```
 
-### CSV batch (CSV must contain a `url` column)
+**CSV batch (CSV must contain a `url` column):**
 ```bash
 python jotpsych_scraper.py \
   --input_csv example_clinics.csv \
@@ -65,28 +62,12 @@ python jotpsych_scraper.py \
   --out results.jsonl
 ```
 
----
-
-## Output formats
+### Output Formats
 - `.jsonl` (default): pretty JSON blocks by default; add `--compact` for one‑line records
 - `.json`: pretty JSON (single object for one URL, or list for many)
 - `.csv`: flattened `clinic_info` fields into columns
 
-Example pretty block (JSONL):
-```json
-{
-  "clinic_info": {
-    "specialty": "",
-    "modalities": "",
-    "location": "",
-    "clinic_size": ""
-  }
-}
-```
-
----
-
-## Flags you’ll actually use
+### Key Flags
 - `--provider`: `gemini` (default), `openai`, or `anthropic`
 - `--max_pages` (default 20): initial page budget
 - `--max_depth` (default 2): initial crawl depth
@@ -97,30 +78,13 @@ Example pretty block (JSONL):
 - `--pretty` / `--compact`: formatting control (JSON/JSONL)
 - `--out`: choose `.jsonl`, `.json`, or `.csv`
 
----
-
-## Troubleshooting
-- “Missing GEMINI_API_KEY …”: export the key or add to `.env`
+### Troubleshooting
+- "Missing GEMINI_API_KEY …": export the key or add to `.env`
 - Output is one line per record: add `--pretty` or use `.json` output, or omit `--compact`
 - No results: site blocks bots or is client‑rendered; try increasing `--max_pages/--max_depth` or consider a headless fetch strategy
-- Still “unknown” fields: use `--exhaust_all_if_unknown` or run with a larger `--max_total_pages`/`--max_total_depth`
+- Still "unknown" fields: use `--exhaust_all_if_unknown` or run with a larger `--max_total_pages`/`--max_total_depth`
 
----
-
-## Repo layout
-```
-.
-├─ jotpsych_scraper.py     # Main CLI/crawler/LLM
-├─ AI_PROMPT.md            # System prompt and extraction rules
-├─ example_clinics.csv     # Example CSV for batch runs
-├─ requirements.txt        # Dependencies
-├─ diagram.md              # Flow diagram (view on GitHub)
-└─ README.md               # This file
-```
-
----
-
-## Development Process
+## 2. Development Process
 
 This project was architected through collaborative sessions with GPT and Claude, iteratively refining the approach to clinic website intelligence extraction. The development process involved several key phases:
 
@@ -151,27 +115,27 @@ flowchart TD
     style N fill:#e8f5e8
 ```
 
-### 1. Initial Architecture & Design
+### Development Phases
+
+**1. Initial Architecture & Design**
 - **Problem Definition**: Need to extract structured clinic metadata (specialty, modalities, location, size) from diverse clinic websites
 - **AI Collaboration**: Worked with GPT and Claude to design a multi-stage pipeline combining web crawling, content extraction, and LLM-based intelligence
 - **Schema Design**: Defined a clean, minimal output schema focusing on the most valuable clinic attributes
 
-### 2. Technical Implementation Strategy
+**2. Technical Implementation Strategy**
 The implementation focused on building a robust, respectful web scraping system with intelligent content discovery and LLM-based extraction capabilities.
 
-### 3. Iterative Refinement
+**3. Iterative Refinement**
 The system was refined through extensive testing with real clinic websites, adding advanced features like iterative expansion and comprehensive error handling.
 
-## How the Code Works
+### How the Code Works
 
-The system follows a sophisticated multi-stage pipeline. There are two key flow diagrams:
+The system follows a sophisticated multi-stage pipeline with two key flow diagrams:
 
 1. **Development Process Flow** (above): Shows the collaborative AI-assisted development journey
 2. **Technical Implementation Flow** (`diagram.md`): Shows the runtime execution pipeline
 
-### Technical Implementation Flow
-
-The runtime system follows this technical pipeline as illustrated in `diagram.md`:
+The runtime system follows this technical pipeline:
 
 ### Stage 1: URL Normalization & Discovery
 ```python
@@ -211,7 +175,7 @@ response = llm_client.generate_content(
 )
 ```
 
-## AI Prompt Engineering
+## 3. AI Prompt Engineering
 
 The system uses a carefully crafted prompt (`AI_PROMPT.md`) that instructs the LLM to extract clinic metadata with high precision. Here's the complete prompt and explanation:
 
@@ -291,11 +255,7 @@ Results are written in multiple formats:
 - **JSON**: Single object or array of objects
 - **CSV**: Flattened fields for spreadsheet analysis
 
-## Notes
-- The default path uses Gemini. OpenAI/Anthropic adapters are present in code and can be enabled via `--provider` if their SDKs and keys are configured.
-- The model is instructed to return "unknown" when evidence is insufficient. Iterative expansion and exhaustive mode help reduce unknowns.
-
-## Next Steps & Caveats
+## 4. Next Steps & Caveats
 
 Below is exactly what I'd do with more time, grouped by engineering, quality, data sources, and operations. I'm also explicit about edge cases and how we'd mitigate them.
 
@@ -395,7 +355,7 @@ Below is exactly what I'd do with more time, grouped by engineering, quality, da
 - **Name collisions**: common names across pages → dedup by (name, credential, page_url) and cap to plausible bounds
 - **International addresses**: state codes won't match US regex → fall back to city + country or leave unknown and emit an evidence citation
 
-## Top Three Uses After ~600 Clinics
+## 5. Top Three Uses After ~600 Clinics
 Here are the three most valuable, concrete ways JotPsych can operationalize this dataset quickly.
 
 ### 1) Precision GTM: Segmentation, Routing, and Personalization
